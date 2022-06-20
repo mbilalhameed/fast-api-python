@@ -4,6 +4,7 @@ from fastapi import FastAPI, Body
 from pydantic import BaseModel
 
 app = FastAPI()
+my_posts = []
 
 
 class Post(BaseModel):
@@ -23,12 +24,14 @@ def get_posts():
     return {'data': ['post1', 'post2', 'post3']}
 
 
-@app.post('/createpost')
+@app.post('/post')
 def create_post(post: Post):
-    print(post.rating)
+    post = post.dict()
+    post['id'] = len(my_posts) + 1
+
+    my_posts.append(post)
+
     return {
         'message': "post created successfully",
-        "post_title": f"{post.title}",
-        "post_content": f"{post.content}",
-        "publish_post": f"{post.publish}"
+        "post": post
     }
