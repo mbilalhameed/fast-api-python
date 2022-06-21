@@ -102,7 +102,7 @@ def get_post(post_id: int):
     }
 
 
-@app.delete('post/delete/{id}', status.HTTP_204_NO_CONTENT)
+@app.delete('post/delete/{id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(post_id: int):
     post, removed = remove_post(post_id)
 
