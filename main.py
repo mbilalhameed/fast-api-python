@@ -25,8 +25,24 @@ def remove_post(post_id):
         return None, False
 
     for index, post in enumerate(my_posts):
-        if post['id'] ==post_id:
+        if post['id'] == post_id:
             my_posts.pop(index)
+
+            return post, True
+
+    return None, False
+
+
+def update_post(post_id, new_data):
+    if not my_posts:
+        return None, False
+
+    for post in my_posts:
+        if post['id'] == post_id:
+            post['title'] = new_data.title
+            post['content'] = new_data.content
+            post['publish'] = new_data.publish
+            post['rating'] = new_data.rating
 
             return post, True
 
@@ -72,7 +88,7 @@ def get_latest_post():
                             detail=f"There are no posts")
 
 
-@app.get('/post/{id}')
+@app.get('post/{id}')
 def get_post(post_id: int):
     post = find_post(post_id)
 
@@ -94,3 +110,17 @@ def delete_post(post_id: int):
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.put('post/{id}')
+def update_post(post_id: int, post: Post):
+    post, updated = update_post(post_id, post)
+
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Post with id={post_id} doesn't exist'")
+
+    return {
+        "message": "Post updated successfully",
+        "post": post
+    }
