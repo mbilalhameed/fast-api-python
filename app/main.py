@@ -31,41 +31,6 @@ class Post(BaseModel):
     rating: Optional[int] = None
 
 
-def find_post(post_id):
-    for post in my_posts:
-        if post['id'] == post_id:
-            return post
-
-
-def remove_post(post_id):
-    if not my_posts:
-        return None, False
-
-    for index, post in enumerate(my_posts):
-        if post['id'] == post_id:
-            my_posts.pop(index)
-
-            return post, True
-
-    return None, False
-
-
-def update_post(post_id, new_data):
-    if not my_posts:
-        return None, False
-
-    for post in my_posts:
-        if post['id'] == post_id:
-            post['title'] = new_data.title
-            post['content'] = new_data.content
-            post['published'] = new_data.published
-            post['rating'] = new_data.rating
-
-            return post, True
-
-    return None, False
-
-
 @app.get('/')
 async def root():
     return {'message': "Hello world!"}
