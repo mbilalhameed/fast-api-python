@@ -1,4 +1,5 @@
 import uvicorn
+from typing import List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 
 from . import models, schemas
@@ -10,28 +11,19 @@ app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
 
-@app.get('/sqlalchamy')
-def test_post(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
-    return {
-        "status": "success",
-        "posts": posts,
-    }
-
-
 @app.get('/')
 async def root():
     return {'message': "Hello world!"}
 
 
-@app.get('/posts')
+@app.get('/posts', response_model=List[schemas.ResponsePostModel])
 def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
 
-    return {'data': posts}
+    return posts
 
 
-@app.post('/create/post', status_code=status.HTTP_201_CREATED)
+@app.post('/create/post', status_code=status.HTTP_201_CREATED, response_model=schemas.ResponsePostModel)
 def create_post(post: schemas.CreatePostModel, db: Session = Depends(get_db)):
     new_post = models.Post(**post.dict())
 
@@ -40,13 +32,10 @@ def create_post(post: schemas.CreatePostModel, db: Session = Depends(get_db)):
 
     db.refresh(new_post)
 
-    return {
-        'message': "Post created successfully",
-        "post": new_post
-    }
+    return new_post
 
 
-@app.get('/fetch/post/{id}')
+@app.get('/fetch/post/{id}', response_model=schemas.ResponsePostModel)
 def get_post(id: str, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
 
@@ -54,26 +43,7 @@ def get_post(id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id={id} doesn't exist'")
 
-    return {
-        "message": "Post fetched successfully",
-        "post": post
-    }
-
-
-@app.get('/fetch/latest/post')
-def get_latest_post():
-    if my_posts:
-        post = my_posts[-1]
-
-        return {
-            "message": "Latest post fetched successfully",
-            "post": post
-        }
-
-    else:
-
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"There are no posts")
+    return post
 
 
 @app.delete('/delete/post/{id}', status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
@@ -91,7 +61,7 @@ def delete_post(id: str, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.put('/update/post/{id}')
+@app.put('/update/post/{id}', response_model=schemas.ResponsePostModel)
 def update_post(id: int, post: schemas.UpdatePostModel, db: Session = Depends(get_db)):
     post_update_query = db.query(models.Post).filter(models.Post.id == id)
     db_post = post_update_query.first()
@@ -104,10 +74,7 @@ def update_post(id: int, post: schemas.UpdatePostModel, db: Session = Depends(ge
 
     db.commit()
 
-    return {
-        "message": "Post updated successfully",
-        "post": post
-    }
+    return db_post
 
 
 if __name__ == "__main__":
