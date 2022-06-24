@@ -92,7 +92,7 @@ def create_user(user: schemas.CreateUserModel, db: Session = Depends(get_db)):
 
 
 @app.get('/fetch/user/{id}', response_model=schemas.ResponseUserModel)
-def get_post(id: str, db: Session = Depends(get_db)):
+def get_user(id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == id).first()
 
     if not user:
