@@ -2,7 +2,7 @@ import uvicorn
 from typing import List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 
-from . import models, schemas
+from . import models, schemas, utils
 from .database import engine, Session, get_db
 
 
@@ -75,6 +75,31 @@ def update_post(id: int, post: schemas.UpdatePostModel, db: Session = Depends(ge
     db.commit()
 
     return db_post
+
+
+@app.post('/create/user', status_code=status.HTTP_201_CREATED, response_model=schemas.ResponseUserModel)
+def create_user(user: schemas.CreateUserModel, db: Session = Depends(get_db)):
+    hashed_password = utils.hash_password(user.password)
+    user.password = hashed_password
+    new_user = models.User(**user.dict())
+
+    db.add(new_user)
+    db.commit()
+
+    db.refresh(new_user)
+
+    return new_user
+
+
+@app.get('/fetch/user/{id}', response_model=schemas.ResponseUserModel)
+def get_post(id: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with id={id} doesn't exist'")
+
+    return user
 
 
 if __name__ == "__main__":
