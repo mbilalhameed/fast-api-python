@@ -1,5 +1,5 @@
 from fastapi import Response, status, HTTPException, Depends, APIRouter
-from typing import List
+from typing import List, Optional
 
 from . import oauth2
 from .. import models, schemas
@@ -14,9 +14,12 @@ router = APIRouter(
 @router.get('/', response_model=List[schemas.ResponsePostModel])
 def get_posts(db: Session = Depends(get_db),
               current_user: int = Depends(oauth2.get_current_user),
+              limit: int = 10,
+              skip: int = 0,
+              search: Optional["str"] = ""
               ):
 
-    posts = db.query(models.Post).all()
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
 
     return posts
 
@@ -27,7 +30,7 @@ def create_post(post: schemas.CreatePostModel,
                 current_user: int = Depends(oauth2.get_current_user)
                 ):
 
-    new_post = models.Post(**post.dict())
+    new_post = models.Post(owner_id=current_user.id, **post.dict())
 
     db.add(new_post)
     db.commit()
@@ -56,14 +59,19 @@ def delete_post(id: str, db: Session = Depends(get_db),
                 current_user: int = Depends(oauth2.get_current_user)
                 ):
 
-    post = db.query(models.Post).filter(models.Post.id == id)
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
 
-    if post.first() is None:
+    if post is None:
         return Response(
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
-    post.delete(synchronize_session=False)
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
+
+    post_query.delete(synchronize_session=False)
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -81,6 +89,10 @@ def update_post(id: int, post: schemas.UpdatePostModel,
     if db_post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id={id} doesn't exist'")
+
+    if db_post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
 
     post_update_query.update(post.dict(), synchronize_session=False)
 
