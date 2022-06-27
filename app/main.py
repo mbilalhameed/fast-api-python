@@ -13,8 +13,6 @@ app.include_router(post.router)
 app.include_router(vote.router)
 app.include_router(authentication.router)
 
-models.Base.metadata.create_all(bind=engine)
-
 
 @app.get('/')
 async def root():
