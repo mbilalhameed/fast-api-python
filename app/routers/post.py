@@ -23,9 +23,7 @@ def get_posts(db: Session = Depends(get_db),
         isouter=True
     ).group_by(
         models.Post.id
-    ).filter(
-        models.Post.title.contains(search)
-    ).limit(limit).offset(skip).all()
+    ).all()
 
     return posts
 
